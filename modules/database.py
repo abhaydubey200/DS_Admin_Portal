@@ -29,22 +29,22 @@ def create_new_snowflake_user(u_id, name, email, dept, brand, role, pw, admin):
     session = get_snowflake_session()
     if not session: return False
     try:
-        # 1. Create User
+        # 1. CREATE USER IDENTITY
         session.sql(f"""
             INSERT INTO DIM_USERS (USER_ID, FULL_NAME, EMAIL, DEPARTMENT, BRAND_ACCESS, IS_ACTIVE, PASSWORD) 
             VALUES ('{u_id}', '{name}', '{email}', '{dept}', '{brand}', TRUE, '{pw}')
         """).collect()
         
-        # 2. Assign Role (Crucial for Login)
+        # 2. CREATE ROLE LINK (Crucial for Login)
         session.sql(f"""
             INSERT INTO USER_ROLE_MAPPING (USER_ID, ROLE_NAME) 
             VALUES ('{u_id}', '{role}')
         """).collect()
         
-        log_admin_action(admin, "CREATE_USER", f"Provisioned: {email}")
+        log_admin_action(admin, "CREATE_USER", f"Provisioned: {email} with role {role}")
         return True
     except Exception as e:
-        st.error(f"Snowflake Error: {e}")
+        st.error(f"Database Error: {e}")
         return False
 
 def update_user_in_snowflake(user_id, updated_fields, admin_email):
@@ -54,7 +54,7 @@ def update_user_in_snowflake(user_id, updated_fields, admin_email):
     query = f"UPDATE DIM_USERS SET {', '.join(set_parts)} WHERE USER_ID = '{user_id}'"
     try:
         session.sql(query).collect()
-        log_admin_action(admin_email, "UPDATE_USER", f"ID: {user_id}")
+        log_admin_action(admin_email, "UPDATE_USER", f"Modified: {user_id}")
         return True
     except Exception as e:
         st.error(f"Update failed: {e}")
